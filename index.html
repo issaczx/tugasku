@@ -23,10 +23,10 @@ dialog{border:0;border-radius:12px;width:min(440px,94vw);padding:18px}
 @media(max-width:700px){.app{display:block}nav{position:fixed;bottom:0;left:0;right:0;flex-direction:row;justify-content:space-around;border:0;border-top:1px solid var(--l);padding:6px;z-index:5}nav b{display:none}nav a{padding:8px 6px;font-size:12px;text-align:center}main{padding:14px 14px 90px}}
 </style></head><body><div id="app"></div><dialog id="dlg"></dialog><div id="toast"></div>
 <script>
-const API='tugasku-api.englishstudymts2.workers.dev';
+const API='https://script.google.com/macros/s/AKfycbwj_vXRZJQYPocd59JY5hPOAxClQZoQrD2BJ5kqTWAmx-D1_qjwGVPWPQhFnQhThLmGbg/exec';
 let T=sessionStorage.t,R=sessionStorage.r,S={},V='dash',G,Q,P=[],F={},SEL={kelas:new Set(),murid:new Set(),tugas:new Set()},IDS={};
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function api(p,b){const r=await fetch(API+p,{method:b?'POST':'GET',headers:{authorization:'Bearer '+T,'content-type':'application/json'},body:b&&JSON.stringify(b)});const j=await r.json().catch(()=>({}));if(r.status==401&&T&&p!='/login')out();if(!r.ok)throw Error(j.e||'Gagal');return j}
+async function api(p,b){const r=await fetch(API,{method:'POST',body:JSON.stringify({...b,a:p,_:T})});const j=await r.json().catch(()=>({}));if(j.c==401&&p!='/login')out();if(j.e)throw Error(j.e);if(!r.ok)throw Error('Gagal');return j}
 const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2800)};
 const run=async(f,ok)=>{try{await f();ok&&toast(ok)}catch(e){toast(e.message)}};
 const out=()=>{sessionStorage.clear();T=R=null;render()};
@@ -36,7 +36,8 @@ const closed=t=>t.kunci||(t.auto&&t.batas&&Date.now()>Date.parse(t.batas)),K=(t,
 const tg=t=>S.murid.filter(m=>t.kelas.includes(m.kelas)&&m.s!='nonaktif'),tgl=d=>d?new Date(d).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'}):'-';
 const stt=(t,k)=>k?(k.nilai!=null?['Dinilai','ok']:['Terkirim','ok']):closed(t)?['Ditutup','bd']:['Belum','wr'];
 const tag=s=>`<span class="tag ${s[1]}">${s[0]}</span>`;
-const imgs=g=>`<div class=im>${(g||[]).map(p=>`<a href="${img(p)}" target=_blank><img src="${img(p)}" loading=lazy></a>`).join('')}</div>`;
+const IMC={};function loadImgs(){document.querySelectorAll('img[data-p]').forEach(async i=>{const p=i.dataset.p;if(!IMC[p])IMC[p]=api('/img',{p}).then(r=>r.d).catch(()=>'');i.src=await IMC[p]})}
+const imgs=g=>`<div class=im>${(g||[]).map(p=>`<img data-p="${p}" alt="">`).join('')}</div>`;
 // ---------- modal form
 function form(title,fs,cb,val={}){const d=$('#dlg');d.innerHTML=`<h3>${title}</h3>`+fs.map(f=>`<label>${f.l}</label>`+(f.o?`<select name="${f.k}" ${f.m?'multiple size=4':''}>${f.o.map(o=>`<option value="${esc(o[0])}" ${[].concat(val[f.k]??[]).includes(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`:f.t=='area'?`<textarea name="${f.k}" rows=3>${esc(val[f.k])}</textarea>`:`<input name="${f.k}" type="${f.t||'text'}" value="${esc(val[f.k])}">`)).join('')+`<div class=row style="margin-top:14px"><button id=ok>Simpan</button><button class=g id=cx>Batal</button></div>`;
 d.showModal();$('#cx').onclick=()=>d.close();$('#ok').onclick=async e=>{const o={};d.querySelectorAll('[name]').forEach(i=>o[i.name]=i.multiple?[...i.selectedOptions].map(x=>x.value):i.value);e.target.disabled=true;try{await cb(o);d.close()}catch(x){toast(x.message)}e.target.disabled=false}}
@@ -88,7 +89,7 @@ ${c?'':`<div class=row><button data-a=send>${k?'Perbarui':'Kirim'}</button>${k?'
 'm.set':()=>`<h2>Akun</h2><div class=card><h3>Profil</h3><p>${esc(S.me.nama)}<br><span class=muted>Kelas ${esc(nm(S.me.kelas))} · No. absen ${esc(S.me.no)} · ${esc(S.me.u)}</span></p><button data-a=pass>Ganti sandi</button></div><button class=d data-a=logout>Keluar</button>`};
 const NAV={a:[['dash','Dashboard'],['master','Master'],['tugas','Tugas'],['rekap','Rekap'],['set','Pengaturan']],m:[['dash','Beranda'],['kirim','Kirim'],['rekap','Rekap'],['set','Akun']]};
 function render(){const a=$('#app');if(!T){a.innerHTML=PG.login();return}if(!S.tugas){a.innerHTML='<p style="padding:20px">Memuat…</p>';return}
- const act=V=='grade'?'tugas':V;a.innerHTML=`<div class=app><nav><b>TugasKu</b>${NAV[R].map(n=>`<a class="${n[0]==act?'on':''}" data-a=go data-v=${n[0]}>${n[1]}</a>`).join('')}</nav><main>${PG[R+'.'+V]()}</main></div>`}
+ const act=V=='grade'?'tugas':V;a.innerHTML=`<div class=app><nav><b>TugasKu</b>${NAV[R].map(n=>`<a class="${n[0]==act?'on':''}" data-a=go data-v=${n[0]}>${n[1]}</a>`).join('')}</nav><main>${PG[R+'.'+V]()}</main></div>`;loadImgs()}
 // ---------- aksi
 const cmp=f=>new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const s=Math.min(1,1600/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);let q=.85,d;do{d=c.toDataURL('image/jpeg',q);q-=.1}while(d.length*.75>2e6&&q>.3);ok(d)};i.onerror=()=>no(Error('Bukan file gambar'));i.src=URL.createObjectURL(f)});
 const dl=(n,txt,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=n;a.click()};
